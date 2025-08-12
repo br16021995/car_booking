@@ -11,6 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
 
 from calendarapp.models import EventMember, Event
 from calendarapp.utils import Calendar
@@ -117,12 +119,15 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
 
     def get(self, request, *args, **kwargs):
         forms = self.form_class()
-        events = Event.objects.filter(is_active=True)
+        events = Event.objects.filter(user=request.user,is_active=True)
         print('here')
         print(events)
-        events_month = Event.objects.filter(is_active=True)
+        now = timezone.now()
+        events_month = Event.objects.filter(user=request.user,is_active=True,end_time__gte=now,
+            start_time__lte=now)
         event_list = []
         # start: '2020-09-16T16:00:00'
+        
         for event in events:
             event_list.append(
                 {   "id": event.id,

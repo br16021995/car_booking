@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% block title %}Car Booking System {% endblock title %}
+{% load widget_tweaks %}
 
 {% block extracss %}
   <link href="{% static 'calender/main.css' %}" rel="stylesheet" />
@@ -26,16 +27,16 @@
                     <h4 class="mb-4">Running Events</h4>
                     {% for event in events_month %}
                       <div class="fc-event">
-                          <h3>{{ event.title }}</h3>
-                          <p>{{ event.description }}</p>
-                          <p>{{event.user.first_name}} {{event.user.last_name}}</p>
-                          <p>From: {{ event.start_time }}</p>
-                          <p>To: {{ event.end_time }}</p>
+                          <h3><span style="color: black;">Event</span> :- {{ event.title }}</h3>
+                          <p><span style="color: black;"> Description :-</span>{{ event.description }}</p>
+                          <p><span style="color: black;"> Name :- </span> {{event.user.first_name}} {{event.user.last_name}}  </p>
+                          <p><span style="color: black;"> From: </span>  {{ event.start_time }}</p>
+                          <p> <span style="color: black;"> To: </span> {{ event.end_time }}</p>
                       </div>
                     {% empty %}
                       <p>No Running Events Found</p>
                     {% endfor %}
-                </div>
+                </div>  
             </div>
             <div class="col-md-9">
                 <div id="calendar"></div>
@@ -63,11 +64,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="message-text" class="col-form-label">Start Date:</label>
-                                    {{ form.start_time }}
+                                    {{ form.start_time|add_class:"form-control" }}
                                 </div>
                                 <div class="form-group">
                                     <label for="message-text" class="col-form-label">End Date:</label>
-                                    {{ form.end_time }}
+                                    {{ form.end_time|add_class:"form-control" }}
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -125,111 +126,120 @@
 {% block extrascripts %}
 <script src="{% static 'calender/main.js' %}"></script>
 <script>
+    document.getElementById('id_start_time').addEventListener('click', function() {
+    this._flatpickr.open();
+});
+  // ==== Utility Functions ====
+
+  // Format JS date to Django datetime string
   function converterDataParaDjangoFormat(data) {
-      const dataJS = new Date(data);
-      const year = dataJS.getFullYear();
-      const month = (dataJS.getMonth() + 1).toString().padStart(2, '0');
-      const day = dataJS.getDate().toString().padStart(2, '0');
-      const hour = dataJS.getHours().toString().padStart(2, '0');
-      const minute = dataJS.getMinutes().toString().padStart(2, '0');
-      const second = dataJS.getSeconds().toString().padStart(2, '0');
-      const formatoDjango = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-      return formatoDjango;
-      
+    const dataJS = new Date(data);
+    const year = dataJS.getFullYear();
+    const month = (dataJS.getMonth() + 1).toString().padStart(2, '0');
+    const day = dataJS.getDate().toString().padStart(2, '0');
+    const hour = dataJS.getHours().toString().padStart(2, '0');
+    const minute = dataJS.getMinutes().toString().padStart(2, '0');
+    const second = dataJS.getSeconds().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   }
-    document.addEventListener('DOMContentLoaded', function() {
-      var calendarEl = document.getElementById('calendar');
-      var today = new Date();
 
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,list'
-        },
-        initialDate: today,
-        navLinks: true, // can click day/week names to navigate views
-        selectable: true,
-        selectMirror: true,
-        select: function(arg) {
-          console.log('clicked')
-          console.log(arg.start)
-          console.log(arg.end)
-          var modal = document.getElementById('eventModal')
-          modal.style.display = 'block'
-          document.getElementById('id_start_time').value = converterDataParaDjangoFormat(arg.start);
-          document.getElementById('id_end_time').value = converterDataParaDjangoFormat(arg.end);
-          calendar.unselect()
-        },
-        
-        // THIS KEY WON'T WORK IN PRODUCTION!!!
-        // To make your own Google API key, follow the directions here:
-        // http://fullcalendar.io/docs/google_calendar/
-        // googleCalendarApiKey: 'AIzaSyCqCxjjLtjbtkX37aOtWB8OfwBLy_6QuYk',
+  // Format date to YYYY-MM-DD for FullCalendar
+  function formatDateLocalYYYYMMDD(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
 
-        // bangladesh Holidays
-        // events: 'bn.bd#holiday@group.v.calendar.google.com',
-        eventClick: function(arg) {
-          
-          console.log('clicked')
-          var title = arg.event.title;
-          var start = formatDateTime(arg.event.start) ;
-          var end = formatDateTime(arg.event.end);
-          var description = arg.event.extendedProps.description || '';
-          var id = arg.event.id;
+  // Add months safely (handles shorter months correctly)
+  function addMonthsSafe(date, months) {
+    const origDay = date.getDate();
+    const target = new Date(date);
+    target.setMonth(target.getMonth() + months);
 
-          var modalInputEnd = document.getElementById('end_event_detail'); 
+    if (target.getDate() !== origDay) {
+      target.setDate(0); // last day of previous month
+    }
+    return target;
+  }
 
-          var modal = document.getElementById('detailModal')
-          var modalTitle = document.getElementById('title_event_detail'); 
-          var modalStart = document.getElementById('start_event_detail'); 
-          var modalEnd = document.getElementById('end_event_detail'); 
-          var modalDescripition = document.getElementById('description_event_detail'); 
-          var deleteButton = document.getElementById("delete-event-button");
-          var nextWeek = document.getElementById("add-to-next-week");
-          var nextDay = document.getElementById("add-to-next-day");
+  // Format for event detail modal
+  function formatDateTime(dateTime) {
+    if (!dateTime) return '';
+    const options = {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+    };
+    return new Date(dateTime).toLocaleDateString('en-US', options);
+  }
 
-          deleteButton.setAttribute("data-event-id", id);
-          nextWeek.setAttribute("data-event-id-week", id);
-          nextDay.setAttribute("data-event-id-day", id);
-          modal.style.display = 'block' 
-          
-          modalTitle.textContent = title;
-          modalStart.textContent = start;
-          modalEnd.textContent = end;
-          modalDescripition.textContent = description;
-          
-         
-          modal.style.display = 'block';
-        },
-        editable: true,
-        dayMaxEvents: true, // allow "more" link when too many events
-        events: {{ events|safe }},
-        // events: [
-        //   {
-        //     title: 'All Day Event',
-        //     start: '2021-06-26'
-        //   },
-        //   {
-        //     groupId: 999,
-        //     title: 'Repeating Event',
-        //     start: '2020-09-16T16:00:00'
-        //   },
-        //   {
-        //     title: 'Conference',
-        //     start: '2020-09-11',
-        //     end: '2020-09-13'
-        //   },
-        //   {
-        //     title: 'Click for Google',
-        //     url: 'http://google.com/',
-        //     start: '2020-09-28'
-        //   }
-        // ]
-      });
+  // ==== Calendar Init ====
+  document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
 
-      calendar.render();
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endInclusive = addMonthsSafe(startDate, 3);
+    const endExclusive = new Date(endInclusive);
+    endExclusive.setDate(endExclusive.getDate() - 1); // FullCalendar end is exclusive
+
+    console.log('validRange start:', formatDateLocalYYYYMMDD(startDate),
+                'endInclusive:', formatDateLocalYYYYMMDD(endInclusive),
+                'endExclusive:', formatDateLocalYYYYMMDD(endExclusive));
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,list'
+      },
+      validRange: {
+        start: formatDateLocalYYYYMMDD(startDate),
+        end: formatDateLocalYYYYMMDD(endExclusive)
+      },
+      initialDate: startDate,
+      navLinks: true,
+      selectable: true,
+      selectMirror: true,
+
+      // ==== When user selects a date/time range ====
+      select: function (arg) {
+        const modal = document.getElementById('eventModal');
+        if (modal) modal.style.display = 'block';
+
+        const startInput = document.getElementById('id_start_time');
+        const endInput = document.getElementById('id_end_time');
+        if (startInput) startInput.value = converterDataParaDjangoFormat(arg.start);
+        if (endInput) endInput.value = converterDataParaDjangoFormat(arg.end);
+
+        calendar.unselect();
+      },
+
+      // ==== When user clicks an existing event ====
+      eventClick: function (arg) {
+        const modal = document.getElementById('detailModal');
+        if (!modal) return;
+
+        document.getElementById('title_event_detail').textContent = arg.event.title || '';
+        document.getElementById('start_event_detail').textContent = formatDateTime(arg.event.start);
+        document.getElementById('end_event_detail').textContent = formatDateTime(arg.event.end);
+        document.getElementById('description_event_detail').textContent = arg.event.extendedProps?.description || '';
+
+        // Attach event IDs to buttons for later actions
+        document.getElementById('delete-event-button')?.setAttribute('data-event-id', arg.event.id);
+        document.getElementById('add-to-next-week')?.setAttribute('data-event-id-week', arg.event.id);
+        document.getElementById('add-to-next-day')?.setAttribute('data-event-id-day', arg.event.id);
+
+        modal.style.display = 'block';
+      },
+
+      editable: true,
+      dayMaxEvents: true,
+      events: {{ events|safe }}
     });
+
+    calendar.render();
+  });
     const closeBtn1 = document.getElementById('modalClose1');
     const closeBtn2 = document.getElementById('modalClose2');
     const closeBtn3 = document.getElementById('modalDetailClose');
