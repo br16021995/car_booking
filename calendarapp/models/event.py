@@ -5,54 +5,63 @@ from django.urls import reverse
 from calendarapp.models import EventAbstract
 from accounts.models import User
 from django.utils import timezone
-
+from calendarapp.models.car import Car  # adjust path if needed
 
 class EventManager(models.Manager):
     """ Event manager """
 
-    def get_all_events(self, user):
-        events = Event.objects.filter(user=user, is_active=True, is_deleted=False)
-        return events
+    def get_all_events(self, user=None):
+        filters = {
+            'is_active': True,
+            'is_deleted': False
+        }
+        if user:
+            filters['user'] = user
+        return Event.objects.filter(**filters)
 
 
 
-    def get_running_events(self, user):
+    def get_running_events(self, user=None):
         now = timezone.now()
-        running_events = Event.objects.filter(
-            user=user,
-            is_active=True,
-            is_deleted=False,
-            end_time__gte=now,
-            start_time__lte=now
-        ).order_by("start_time")
-        return running_events
+        filters = {
+            'is_active': True,
+            'is_deleted': False,
+            'end_time__gte': now,
+            'start_time__lte': now
+        }
+        if user:
+            filters['user'] = user
+        return Event.objects.filter(**filters).order_by("start_time")
 
     
-    def get_completed_events(self, user):
+    def get_completed_events(self, user=None):
         now = timezone.now()
-        completed_events = Event.objects.filter(
-            user=user,
-            is_active=True,
-            is_deleted=False,
-            end_time__lt=now,
-        )
-        return completed_events
+        filters = {
+            'is_active': True,
+            'is_deleted': False,
+            'end_time__lt': now
+        }
+        if user:
+            filters['user'] = user
+        return Event.objects.filter(**filters)
     
-    def get_upcoming_events(self, user):
+    def get_upcoming_events(self, user=None):
         now = timezone.now()
-        upcoming_events = Event.objects.filter(
-            user=user,
-            is_active=True,
-            is_deleted=False,
-            start_time__gt=now,
-        )
-        return upcoming_events
+        filters = {
+            'is_active': True,
+            'is_deleted': False,
+            'start_time__gt': now
+        }
+        if user:
+            filters['user'] = user
+        return Event.objects.filter(**filters)
 
 
 class Event(EventAbstract):
     """ Event model """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="events")
+    car = models.ForeignKey(Car, on_delete=models.SET_NULL, null=True, blank=True, related_name='events')
     title = models.CharField(max_length=200)
     description = models.TextField()
     start_time = models.DateTimeField()

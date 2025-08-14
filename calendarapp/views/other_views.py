@@ -119,11 +119,9 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
 
     def get(self, request, *args, **kwargs):
         forms = self.form_class()
-        events = Event.objects.filter(user=request.user,is_active=True)
-        print('here')
-        print(events)
+        events = Event.objects.filter(is_active=True)
         now = timezone.now()
-        events_month = Event.objects.filter(user=request.user,is_active=True,end_time__gte=now,
+        events_month = Event.objects.filter(is_active=True,end_time__gte=now,
             start_time__lte=now)
         event_list = []
         # start: '2020-09-16T16:00:00'
@@ -135,6 +133,8 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
                     "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                     "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
                     "description": event.description,
+                    "car_name": event.car.car_name,
+                    "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
                 }
             )
         
@@ -143,14 +143,38 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        forms = self.form_class(request.POST)
-        if forms.is_valid():
-            form = forms.save(commit=False)
-            form.user = request.user
-            form.save()
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.user = request.user
+            event.save()
             return redirect("calendarapp:calendar")
-        context = {"form": forms}
-        return render(request, self.template_name, context)
+        else:
+            # Show form errors if validation fails
+            print('error')
+            now = timezone.now()
+            events = Event.objects.filter(is_active=True)
+            events_month = Event.objects.filter(
+                is_active=True,
+                end_time__gte=now,
+                start_time__lte=now,
+            )
+            event_list = []
+            for event in events:
+                event_list.append({
+                    "id": event.id,
+                    "title": event.title,
+                    "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "description": event.description,
+                })
+
+            context = {
+                "form": form,
+                "events": event_list,
+                "events_month": events_month,
+            }
+            return render(request, self.template_name, context)
 
 
 
