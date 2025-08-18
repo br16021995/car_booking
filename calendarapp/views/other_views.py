@@ -12,9 +12,11 @@ from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.contrib import messages
 
 
-from calendarapp.models import EventMember, Event
+
+from calendarapp.models import EventMember, Event,Car
 from calendarapp.utils import Calendar
 from calendarapp.forms import EventForm, AddMemberForm
 
@@ -119,39 +121,66 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
 
     def get(self, request, *args, **kwargs):
         forms = self.form_class()
-        events = Event.objects.filter(is_active=True)
-        now = timezone.now()
-        events_month = Event.objects.filter(is_active=True,end_time__gte=now,
-            start_time__lte=now)
+        cars = Car.objects.filter(is_active=True)
+        car_id = request.GET.get('car_id')
+        events = Event.objects.none()
+        events_month = Event.objects.none()
+
+        if car_id:
+            try:
+                selected_car = cars.get(id=car_id)
+                now = timezone.now()
+                events = Event.objects.filter(car=selected_car, is_active=True)
+                events_month = events.filter(end_time__gte=now, start_time__lte=now)
+            except Car.DoesNotExist:
+                selected_car = None
+        else:
+            selected_car = None
+
         event_list = []
-        # start: '2020-09-16T16:00:00'
-        
         for event in events:
-            event_list.append(
-                {   "id": event.id,
-                    "title": event.title,
-                    "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "description": event.description,
-                    "car_name": event.car.car_name,
-                    "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
-                }
-            )
-        
-        context = {"form": forms, "events": event_list,
-                   "events_month": events_month}
+            event_list.append({
+                "id": event.id,
+                "title": event.title,
+                "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "description": event.description,
+                "car_name": event.car.car_name,
+                "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
+            })
+
+        context = {
+            "form": forms,
+            "cars": cars,
+            "selected_car": selected_car,
+            "events": event_list,
+            "events_month": events_month,
+        }
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST)
+        cars = Car.objects.filter(is_active=True)  # Add this line to get cars
+        car_id = request.POST.get('car') or request.GET.get('car_id')
+        selected_car = None
+        if car_id:
+            try:
+                selected_car = cars.get(id=car_id)
+            except Car.DoesNotExist:
+                selected_car = None
+
         if form.is_valid():
             event = form.save(commit=False)
             event.user = request.user
             event.save()
-            return redirect("calendarapp:calendar")
+            messages.success(request, "Car booked successfully!")
+            # Redirect to the same page with selected car id if present
+            if car_id:
+                return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
+            else:
+                return redirect("calendarapp:calendar")
         else:
-            # Show form errors if validation fails
-            print('error')
+            messages.error(request, "There was an error booking the event. Please check the form.")
             now = timezone.now()
             events = Event.objects.filter(is_active=True)
             events_month = Event.objects.filter(
@@ -171,6 +200,8 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
 
             context = {
                 "form": form,
+                "cars": cars,  # Add cars here
+                "selected_car": selected_car,  # Add selected_car here
                 "events": event_list,
                 "events_month": events_month,
             }

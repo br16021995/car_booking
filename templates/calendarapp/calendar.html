@@ -22,48 +22,34 @@
 
 {% block content %}
 {% if form.non_field_errors %}
-<div class="alert alert-danger">
+<div class="alert alert-danger" id="error-message">
   {{ form.non_field_errors }}
 </div>
+{% endif %}
+{% if messages %}
+  <div id="message-container">
+    {% for message in messages %}
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
 {% endif %}
 <div class="row">
   <div class="col-md-12">
     <div class="tile row">
       <div class="col-md-3">
-        <div id="external-events">
-          <h4 class="mb-4">Running Events</h4>
-          {% for event in events_month %}
-          <div class="card mb-3 shadow-sm border-primary">
-            <div class="card-body">
-              <h5 class="card-title text-primary font-weight-bold">
-                <i class="fa fa-car mr-2"></i>{{ event.title }}
-              </h5>
-
-              <p class="card-text mb-2">
-                <strong>Car:</strong> {{ event.car.car_name }}
-              </p>
-
-              <p class="card-text mb-2">
-                <strong>Description:</strong> {{ event.description }}
-              </p>
-
-              <p class="card-text mb-2">
-                <strong>Booked By:</strong> {{ event.user.first_name }} {{ event.user.last_name }}
-              </p>
-
-              <p class="card-text mb-1">
-                <strong>From:</strong> <i class="fa fa-clock-o ml-1"></i> {{ event.start_time|date:"D, d M Y H:i" }}
-              </p>
-
-              <p class="card-text">
-                <strong>To:</strong> <i class="fa fa-clock-o ml-1"></i> {{ event.end_time|date:"D, d M Y H:i" }}
-              </p>
-            </div>
-          </div>
+        <h4>Select a Car</h4>
+        <ul id="car-list" class="list-group">
+          {% for car in cars %}
+          <li class="list-group-item car-item {% if selected_car and car.id == selected_car.id %}active{% endif %}"
+            data-car-id="{{ car.id }}">
+            {{ car.car_name }}
+          </li>
           {% empty %}
-          <p>No Running Events Found</p>
+          <li class="list-group-item">No cars available</li>
           {% endfor %}
-        </div>
+        </ul>
       </div>
       <div class="col-md-9">
         <div id="calendar"></div>
@@ -89,17 +75,17 @@
 
                 <div class="form-group">
                   <label for="id_title">Event Title</label>
-                  {{ form.title|add_class:"form-control" }}
+                  {{ form.title}}
                 </div>
-
-                <div class="form-group">
+                <input type="hidden" id="id_car" name="car" value="{% if selected_car %}{{ selected_car.id }}{% endif %}">
+                <!-- <div class="form-group">
                   <label for="id_car">Car</label>
-                  {{ form.car|add_class:"form-control" }}
-                </div>
+                  {{ form.car}}
+                </div> -->
 
                 <div class="form-group">
                   <label for="id_description">Description</label>
-                  {{ form.description|add_class:"form-control" }}
+                  {{ form.description }}
                 </div>
 
                 <div class="form-row">
@@ -127,66 +113,68 @@
       <div class="modal fade show" id="detailModal" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
+          <div class="modal-content">
 
-      <!-- Modal Header -->
-      <div class="modal-header bg-primary">
-        <h5 class="modal-title text-white" id="title_event_detail"></h5>
-        <button id="modalDetailClose" type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-
-      <!-- Form -->
-      <form method="">
-        {% csrf_token %}
-        <div class="modal-body">
-          <div class="container-fluid">
-
-            <!-- Row 1 -->
-            <div class="form-row mb-3">
-              <div class="col-md-6">
-                <label><strong>Description:</strong></label>
-                <p class="mb-0" id="description_event_detail"></p>
-              </div>
-              <div class="col-md-6">
-                <label><strong>Car Name:</strong></label>
-                <p class="mb-0" id="car_event_detail"></p>
-              </div>
+            <!-- Modal Header -->
+            <div class="modal-header bg-primary">
+              <h5 class="modal-title text-white" id="title_event_detail"></h5>
+              <button id="modalDetailClose" type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
 
-            <!-- Row 2 -->
-            <div class="form-row mb-3">
-              <div class="col-md-6">
-                <label><strong>Start Date:</strong></label>
-                <p class="mb-0" id="start_event_detail"></p>
-              </div>
-              <div class="col-md-6">
-                <label><strong>End Date:</strong></label>
-                <p class="mb-0" id="end_event_detail"></p>
-              </div>
-            </div>
+            <!-- Form -->
+            <form method="">
+              {% csrf_token %}
+              <div class="modal-body">
+                <div class="container-fluid">
 
-            <!-- Row 3 -->
-            <div class="form-row mb-2">
-              <div class="col-md-6">
-                <label><strong>Booked By:</strong></label>
-                <p class="mb-0" id="booked_by_event_detail"></p>
-              </div>
-            </div>
+                  <!-- Row 1 -->
+                  <div class="form-row mb-3">
+                    <div class="col-md-6">
+                      <label><strong>Description:</strong></label>
+                      <p class="mb-0" id="description_event_detail"></p>
+                    </div>
+                    <div class="col-md-6">
+                      <label><strong>Car Name:</strong></label>
+                      <p class="mb-0" id="car_event_detail"></p>
+                    </div>
+                  </div>
 
+                  <!-- Row 2 -->
+                  <div class="form-row mb-3">
+                    <div class="col-md-6">
+                      <label><strong>Start Date:</strong></label>
+                      <p class="mb-0" id="start_event_detail"></p>
+                    </div>
+                    <div class="col-md-6">
+                      <label><strong>End Date:</strong></label>
+                      <p class="mb-0" id="end_event_detail"></p>
+                    </div>
+                  </div>
+
+                  <!-- Row 3 -->
+                  <div class="form-row mb-2">
+                    <div class="col-md-6">
+                      <label><strong>Booked By:</strong></label>
+                      <p class="mb-0" id="booked_by_event_detail"></p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Modal Footer -->
+              <div class="modal-footer">
+                <button id="delete-event-button" data-event-id="" type="button" class="btn btn-danger">Delete</button>
+                <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next
+                  Week</button>
+                <button id="add-to-next-day" data-event-id-day="" type="button" class="btn btn-primary">Next
+                  Day</button>
+              </div>
+            </form>
           </div>
         </div>
-
-        <!-- Modal Footer -->
-        <div class="modal-footer">
-          <button id="delete-event-button" data-event-id="" type="button" class="btn btn-danger">Delete</button>
-          <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next Week</button>
-          <button id="add-to-next-day" data-event-id-day="" type="button" class="btn btn-primary">Next Day</button>
-        </div>
-      </form>
-    </div>
-  </div>
       </div>
     </div>
   </div>
@@ -196,10 +184,15 @@
 
 {% block extrascripts %}
 <script src="{% static 'calender/main.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
+
+  
+  
   document.getElementById('id_start_time').addEventListener('click', function () {
     this._flatpickr.open();
   });
+  
 
   // ==== Utility Functions ====
 
@@ -246,46 +239,60 @@
 
   // ==== Calendar Init ====
   document.addEventListener('DOMContentLoaded', function () {
+    
     const calendarEl = document.getElementById('calendar');
-    if (!calendarEl) return;
+  if (!calendarEl) return;
 
-    const today = new Date();
-    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endInclusive = addMonthsSafe(startDate, 3);
-    const endExclusive = new Date(endInclusive);
-    endExclusive.setDate(endExclusive.getDate() - 1); // FullCalendar end is exclusive
+  let selectedCarId = {% if selected_car %}{{ selected_car.id }}{% else %}null{% endif %};
 
-    console.log('validRange start:', formatDateLocalYYYYMMDD(startDate),
-      'endInclusive:', formatDateLocalYYYYMMDD(endInclusive),
-      'endExclusive:', formatDateLocalYYYYMMDD(endExclusive));
+  // Define allowed date range: from today to 3 months later
+ const today = new Date();
+const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+const endInclusive = addMonthsSafe(startDate, 3);
+const endExclusive = new Date(endInclusive);
+endExclusive.setDate(endExclusive.getDate() - 1); // FullCalendar end is exclusive
 
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay,list'
-      },
-      validRange: {
-        start: formatDateLocalYYYYMMDD(startDate),
-        end: formatDateLocalYYYYMMDD(endExclusive)
-      },
-      initialDate: startDate,
-      navLinks: true,
-      selectable: true,
-      selectMirror: true,
-
-      // ==== When user selects a date/time range ====
-      select: function (arg) {
-        const modal = document.getElementById('eventModal');
-        if (modal) modal.style.display = 'block';
-
-        const startInput = document.getElementById('id_start_time');
-        const endInput = document.getElementById('id_end_time');
-        if (startInput) startInput.value = converterDataParaDjangoFormat(arg.start);
-        if (endInput) endInput.value = converterDataParaDjangoFormat(arg.end);
-
+let calendar = new FullCalendar.Calendar(calendarEl, {
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay,list'
+  },
+  initialView: 'dayGridMonth',
+  navLinks: true,
+  selectable: true,
+  selectMirror: true,
+  editable: true,
+  dayMaxEvents: true,
+  validRange: {
+    start: startDate,
+    end: endExclusive
+  },
+    events: {{ events| safe }},
+    select: function (arg) {
+      if (!selectedCarId) {
+        alert('Please select a car before booking.');
         calendar.unselect();
-      },
+        return;
+      }
+
+      // Check if selected date is within valid range
+      // if (arg.start < today || arg.end > maxDate) {
+      //   alert('You can only book within the next 3 months.');
+      //   calendar.unselect();
+      //   return;
+      // }
+
+      const modal = document.getElementById('eventModal');
+      if (modal) modal.style.display = 'block';
+
+      const startInput = document.getElementById('id_start_time');
+      const endInput = document.getElementById('id_end_time');
+      if (startInput) startInput.value = converterDataParaDjangoFormat(arg.start);
+      if (endInput) endInput.value = converterDataParaDjangoFormat(arg.end);
+
+      calendar.unselect();
+    },
 
       // ==== When user clicks an existing event ====
       eventClick: function (arg) {
@@ -314,6 +321,38 @@
     });
 
   calendar.render();
+
+  const carList = document.getElementById('car-list');
+  if (carList) {
+    carList.addEventListener('click', function (e) {
+      const target = e.target;
+      if (target.classList.contains('car-item')) {
+        // Remove active class from all
+        document.querySelectorAll('.car-item').forEach(item => item.classList.remove('active'));
+        // Add active class to selected
+        target.classList.add('active');
+
+        selectedCarId = target.getAttribute('data-car-id');
+
+        // Fetch events for selected car via AJAX or reload page with car_id param
+        // For simplicity, reload page with car_id param:
+        const url = new URL(window.location.href);
+        url.searchParams.set('car_id', selectedCarId);
+        window.location.href = url.toString();
+
+        // Alternatively, you can fetch events via AJAX and update calendar events:
+        /*
+        fetch(`/api/events/?car_id=${selectedCarId}`)
+          .then(response => response.json())
+          .then(data => {
+            calendar.removeAllEvents();
+            calendar.addEventSource(data);
+          });
+        */
+      }
+    });
+  }
+
   });
   const closeBtn1 = document.getElementById('modalClose1');
   const closeBtn2 = document.getElementById('modalClose2');
@@ -396,5 +435,25 @@
     }
   });
 
+</script>
+<script>
+  // Wait for the DOM to load
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set timeout to hide error message after 20 seconds (20000 milliseconds)
+    var errorMessage = document.getElementById('error-message');
+    if (errorMessage) {
+      setTimeout(function() {
+        errorMessage.style.display = 'none';
+      }, 20000);
+    }
+
+    // Set timeout to hide message container after 20 seconds
+    var messageContainer = document.getElementById('message-container');
+    if (messageContainer) {
+      setTimeout(function() {
+        messageContainer.style.display = 'none';
+      }, 20000);
+    }
+  });
 </script>
 {% endblock extrascripts %}

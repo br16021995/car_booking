@@ -24,7 +24,7 @@ class EventForm(ModelForm):
                 attrs={"type": "datetime-local", "class": "form-control"},
                 format="%Y-%m-%dT%H:%M",
             ),
-            "car": forms.Select(attrs={"class": "form-control"}),
+            # "car": forms.Select(attrs={"class": "form-control"}),
         }
 
     def __init__(self, *args, **kwargs):
