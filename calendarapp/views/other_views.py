@@ -16,6 +16,7 @@ from django.contrib import messages
 
 
 
+
 from calendarapp.models import EventMember, Event,Car
 from calendarapp.utils import Calendar
 from calendarapp.forms import EventForm, AddMemberForm
@@ -212,10 +213,14 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
 def delete_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     if request.method == 'POST':
-        event.delete()
-        return JsonResponse({'message': 'Event sucess delete.'})
+        # <--- ADD THIS CHECK
+        if request.user == event.user:
+            event.delete()
+            return JsonResponse({'message': 'Event successfully deleted.'})
+        else:
+            return JsonResponse({'message': 'You are not authorized to delete this event.'}, status=403) # Forbidden
     else:
-        return JsonResponse({'message': 'Error!'}, status=400)
+        return JsonResponse({'message': 'Invalid request method.'}, status=400)
 
 def next_week(request, event_id):
     event = get_object_or_404(Event, id=event_id)

@@ -165,12 +165,13 @@
               </div>
 
               <!-- Modal Footer -->
+               
               <div class="modal-footer">
                 <button id="delete-event-button" data-event-id="" type="button" class="btn btn-danger">Delete</button>
-                <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next
+                <!-- <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next
                   Week</button>
                 <button id="add-to-next-day" data-event-id-day="" type="button" class="btn btn-primary">Next
-                  Day</button>
+                  Day</button> -->
               </div>
             </form>
           </div>
@@ -388,7 +389,7 @@ let calendar = new FullCalendar.Calendar(calendarEl, {
           window.location.reload();
         },
         error: function (xhr, status, error) {
-          alert('Error!');
+          alert('You are not authorized to delete this event.');
         }
 
       });
