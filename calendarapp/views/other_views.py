@@ -62,7 +62,9 @@ class CalendarView(LoginRequiredMixin, generic.ListView):
 
 @login_required(login_url="signup")
 def create_event(request):
-    form = EventForm(request.POST or None)
+    # You might want to update this view as well if it's still in use
+    # to pass the user to the form, similar to CalendarViewNew.
+    form = EventForm(request.POST or None, user=request.user) # <--- ADD user=request.user
     if request.POST and form.is_valid():
         title = form.cleaned_data["title"]
         description = form.cleaned_data["description"]
@@ -83,6 +85,12 @@ class EventEdit(generic.UpdateView):
     model = Event
     fields = ["title", "description", "start_time", "end_time"]
     template_name = "event.html"
+
+    # Override get_form_kwargs to pass the user to the form
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 @login_required(login_url="signup")
@@ -121,7 +129,8 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
     form_class = EventForm
 
     def get(self, request, *args, **kwargs):
-        forms = self.form_class()
+        # Pass the user to the form
+        forms = self.form_class(user=request.user) # <--- MODIFIED
         cars = Car.objects.filter(is_active=True)
         car_id = request.GET.get('car_id')
         events = Event.objects.none()
@@ -146,9 +155,14 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
                 "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "description": event.description,
-                "car_name": event.car.car_name,
+                "car_name": event.car.car_name +" - ( "+ event.car.car_unique_id+" )",
+                "car_id": event.car.id,  # Add car unique ID
                 "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
+                "user_id": event.user.id,  # event creator's user id
             })
+
+        # Determine user type
+        is_admin = request.user.is_staff or request.user.is_superuser
 
         context = {
             "form": forms,
@@ -156,12 +170,13 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
             "selected_car": selected_car,
             "events": event_list,
             "events_month": events_month,
+            "is_admin": is_admin,  # Pass to template
         }
         return render(request, self.template_name, context)
-
+    
     def post(self, request, *args, **kwargs):
-        form = self.form_class(request.POST)
-        cars = Car.objects.filter(is_active=True)  # Add this line to get cars
+        form = self.form_class(request.POST, user=request.user)
+        cars = Car.objects.filter(is_active=True)
         car_id = request.POST.get('car') or request.GET.get('car_id')
         selected_car = None
         if car_id:
@@ -173,40 +188,54 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
         if form.is_valid():
             event = form.save(commit=False)
             event.user = request.user
-            event.save()
-            messages.success(request, "Car booked successfully!")
-            # Redirect to the same page with selected car id if present
-            if car_id:
-                return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
-            else:
-                return redirect("calendarapp:calendar")
-        else:
-            messages.error(request, "There was an error booking the event. Please check the form.")
-            now = timezone.now()
-            events = Event.objects.filter(is_active=True)
-            events_month = Event.objects.filter(
-                is_active=True,
-                end_time__gte=now,
-                start_time__lte=now,
-            )
-            event_list = []
-            for event in events:
-                event_list.append({
-                    "id": event.id,
-                    "title": event.title,
-                    "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "description": event.description,
-                })
 
-            context = {
-                "form": form,
-                "cars": cars,  # Add cars here
-                "selected_car": selected_car,  # Add selected_car here
-                "events": event_list,
-                "events_month": events_month,
-            }
-            return render(request, self.template_name, context)
+            # === Custom validation for booking days ===
+            duration = event.end_time - event.start_time
+            max_days = 30 if (request.user.is_superuser or request.user.is_staff) else 4
+
+            if duration > timedelta(days=max_days):
+                # form.add_error(
+                #     None,
+                #     f"You cannot book for more than {max_days} days."
+                # )
+                messages.error(request, f"You cannot book car for more than {max_days} days.")
+                return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
+
+            else:
+                event.save()
+                messages.success(request, "Car booked successfully!")
+                if car_id:
+                    return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
+                else:
+                    return redirect("calendarapp:calendar")
+
+        # If invalid form or error in validation → return context
+        # messages.error(request, "There was an error booking the event. Please check the form.")
+        now = timezone.now()
+        events = Event.objects.filter(is_active=True)
+        events_month = Event.objects.filter(
+            is_active=True,
+            end_time__gte=now,
+            start_time__lte=now,
+        )
+        event_list = []
+        for event in events:
+            event_list.append({
+                "id": event.id,
+                "title": event.title,
+                "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "description": event.description,
+            })
+
+        context = {
+            "form": form,
+            "cars": cars,
+            "selected_car": selected_car,
+            "events": event_list,
+            "events_month": events_month,
+        }
+        return render(request, self.template_name, context)
 
 
 
@@ -214,7 +243,7 @@ def delete_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     if request.method == 'POST':
         # <--- ADD THIS CHECK
-        if request.user == event.user:
+        if request.user == event.user or request.user.is_superuser or request.user.is_staff: # Allow superuser/staff to delete
             event.delete()
             return JsonResponse({'message': 'Event successfully deleted.'})
         else:

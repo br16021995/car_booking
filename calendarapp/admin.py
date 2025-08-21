@@ -1,6 +1,7 @@
 from django.contrib import admin
 from calendarapp import models
-from calendarapp.models import Car
+from calendarapp.models import Car,VehicleProgram
+
 
 @admin.register(models.Event)
 class EventAdmin(admin.ModelAdmin):
@@ -25,9 +26,16 @@ class EventMemberAdmin(admin.ModelAdmin):
     list_filter = ["event"]
 
 
+@admin.register(VehicleProgram)
+class VehicleProgramAdmin(admin.ModelAdmin):
+    model = VehicleProgram
+    list_display = ["id", "name", "is_active"]
+    list_filter = ["is_active"]
+    search_fields = ["name"]
+
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
     model = Car
-    list_display = ["id", "car_name", "car_unique_id", "date", "updated_date", "is_active"]
-    list_filter = ["is_active"]
+    list_display = ["id", "car_name", "car_unique_id", "vehicle_program", "date", "updated_date", "is_active"]
+    list_filter = ["is_active", "vehicle_program"]
     search_fields = ["car_name", "car_unique_id"]

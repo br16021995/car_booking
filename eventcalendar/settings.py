@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "calendarapp.apps.CalendarappConfig",
     "accounts.apps.AccountsConfig",
+    
+
 
 ]
 
@@ -88,7 +90,7 @@ DATABASES = {
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'cal_ford',
+#         'NAME': 'ford_cars',
 #         'USER': 'root',
 #         'PASSWORD': 'Swaroopa@123',
 #         'HOST': '127.0.0.1',

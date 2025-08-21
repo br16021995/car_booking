@@ -1,5 +1,6 @@
 from django.forms import ModelForm, DateInput
 from calendarapp.models import Event, EventMember,Car
+from accounts.models import User
 from django import forms
 from datetime import datetime, timedelta
 from django.core.exceptions import ValidationError
@@ -28,14 +29,25 @@ class EventForm(ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Extract the 'user' from kwargs before calling super()
+        user = kwargs.pop('user', None)
         super(EventForm, self).__init__(*args, **kwargs)
+
         self.fields["start_time"].input_formats = ("%Y-%m-%dT%H:%M",)
         self.fields["end_time"].input_formats = ("%Y-%m-%dT%H:%M",)
         self.fields["car"].queryset = Car.objects.filter(is_active=True)
 
         now = datetime.now()
         min_date = now.strftime("%Y-%m-%dT%H:%M")
-        max_date = (now + timedelta(days=90)).strftime("%Y-%m-%dT%H:%M")
+
+        # Determine max_delta_days based on user type
+        if user and user.is_superuser:
+            max_delta_days = 90
+        else:
+            max_delta_days = 30
+
+        max_date = (now + timedelta(days=max_delta_days)).strftime("%Y-%m-%dT%H:%M")
+
         self.fields["start_time"].widget.attrs["min"] = min_date
         self.fields["start_time"].widget.attrs["max"] = max_date
         self.fields["end_time"].widget.attrs["min"] = min_date

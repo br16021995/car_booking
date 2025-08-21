@@ -1443,3 +1443,36 @@ A VERTICAL event
   .fc-theme-bootstrap a:not([href]) {
     color: inherit; /* natural color for navlinks */
   }
+
+
+  /* Car List Styling */
+.car-list .list-group-item {
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease-in-out;
+  font-size: 15px;
+}
+
+.car-list .list-group-item:hover {
+  background-color: #f1f5f9; /* light gray hover */
+  transform: translateX(3px); /* slight slide effect */
+}
+
+.car-list .list-group-item.active {
+  background-color: #009688 !important; /* Bootstrap primary blue */
+  color: #fff !important;
+  font-weight: bold;
+  border: none;
+}
+
+.car-list .car-name {
+  font-size: 16px;
+}
+
+.car-list .car-unique {
+  background: #6c757d; /* gray pill */
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 12px;
+}
