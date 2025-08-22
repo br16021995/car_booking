@@ -18,6 +18,50 @@
 </ul>
 {% endblock breadcrumb %}
 
+<style>
+  .vehicle-program-item {
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.vehicle-program-item:hover {
+  background-color: #f7f7f7;
+}
+
+.vehicle-program-item.active {
+  background-color: #e5e5e5;
+}
+
+.car-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.car-item {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.car-item:last-child {
+  border-bottom: none;
+}
+
+.car-item.active {
+  background-color: #d5d5d5;
+}
+
+.car-name {
+  font-weight: bold;
+}
+
+.car-unique {
+  font-size: 12px;
+  padding: 2px 5px;
+}
+</style>
+
 
 
 {% block content %}
@@ -44,22 +88,31 @@
 <div class="row">
   <div class="col-md-12">
     <div class="tile row">
-      <div class="col-md-3">
-  <h4 class="mb-3">🚗 Select a Car</h4>
-  <ul id="car-list" class="list-group car-list">
-    {% for car in cars %}
-      <li class="list-group-item car-item d-flex justify-content-between align-items-center 
-                 {% if selected_car and car.id == selected_car.id %}active{% endif %}"
-          data-car-id="{{ car.id }}">
-        <span class="car-name">{{ car.car_name }}</span>
-        <span class="badge badge-primary badge-pill car-unique">
-          {{ car.car_unique_id }}
-        </span>
-      </li>
-    {% empty %}
-      <li class="list-group-item text-muted">No cars available</li>
-    {% endfor %}
-  </ul>
+     <div class="col-md-3">
+    <h4 class="mb-3">🚗 Select a Vehicle Program</h4>
+    <ul id="vehicle-program-list" class="list-group">
+        {% for program in vehicle_programs %}
+            <li class="list-group-item vehicle-program-item">
+                <span class="vehicle-program-name">{{ program.name }}</span>
+                <ul class="car-list list-group mt-2" style="display: none;">
+                    {% for car in program.cars.all %}
+                        <li class="list-group-item car-item d-flex justify-content-between align-items-center 
+                                   {% if selected_car and car.id == selected_car.id %}active{% endif %}"
+                            data-car-id="{{ car.id }}">
+                            <span class="car-name">{{ car.car_name }}</span>
+                            <span class="badge badge-primary badge-pill car-unique">
+                                {{ car.car_unique_id }}
+                            </span>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">No cars available</li>
+                    {% endfor %}
+                </ul>
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted">No vehicle programs available</li>
+        {% endfor %}
+    </ul>
 </div>
       <div class="col-md-9">
         <div id="calendar"></div>
@@ -195,7 +248,41 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 
-  
+const vehicleProgramList = document.getElementById('vehicle-program-list');
+if (vehicleProgramList) {
+  vehicleProgramList.addEventListener('click', function(e) {
+    const programItem = e.target.closest('.vehicle-program-item');
+    if (programItem) {
+      const carList = programItem.querySelector('.car-list');
+      if (carList) {
+        carList.style.display = carList.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+  });
+}
+
+const carList = document.getElementById('vehicle-program-list');
+if (carList) {
+  carList.addEventListener('click', function(e) {
+    const carItem = e.target.closest('.car-item');
+    if (carItem) {
+      // Remove active class from all car items
+      document.querySelectorAll('.car-item').forEach(item => item.classList.remove('active'));
+      // Add active class to selected car item
+      carItem.classList.add('active');
+
+      // Remove active class from all vehicle program items
+      document.querySelectorAll('.vehicle-program-item').forEach(item => item.classList.remove('active'));
+      // Add active class to the vehicle program item that contains the selected car item
+      carItem.closest('.vehicle-program-item').classList.add('active');
+
+      const selectedCarId = carItem.getAttribute('data-car-id');
+      const url = new URL(window.location.href);
+      url.searchParams.set('car_id', selectedCarId);
+      window.location.href = url.toString();
+    }
+  });
+}
   
   document.getElementById('id_start_time').addEventListener('click', function () {
     this._flatpickr.open();
@@ -462,5 +549,23 @@ let calendar = new FullCalendar.Calendar(calendarEl, {
       }, 10000);
     }
   });
+
+  document.addEventListener('DOMContentLoaded', function() {
+  const selectedCarId = {% if selected_car %}{{ selected_car.id }}{% else %}null{% endif %};
+  if (selectedCarId) {
+    const carItem = document.querySelector(`.car-item[data-car-id="${selectedCarId}"]`);
+    if (carItem) {
+      carItem.classList.add('active');
+      const programItem = carItem.closest('.vehicle-program-item');
+      if (programItem) {
+        programItem.classList.add('active');
+        const carList = programItem.querySelector('.car-list');
+        if (carList) {
+          carList.style.display = 'block';
+        }
+      }
+    }
+  }
+});
 </script>
 {% endblock extrascripts %}

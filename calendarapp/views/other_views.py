@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.contrib import messages
+from calendarapp.models import VehicleProgram
 
 
 
@@ -129,23 +130,21 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
     form_class = EventForm
 
     def get(self, request, *args, **kwargs):
-        # Pass the user to the form
-        forms = self.form_class(user=request.user) # <--- MODIFIED
-        cars = Car.objects.filter(is_active=True)
+        forms = self.form_class(user=request.user)
+        vehicle_programs = VehicleProgram.objects.filter(is_active=True).prefetch_related('cars')
         car_id = request.GET.get('car_id')
         events = Event.objects.none()
         events_month = Event.objects.none()
 
+        selected_car = None
         if car_id:
             try:
-                selected_car = cars.get(id=car_id)
+                selected_car = Car.objects.get(id=car_id)
                 now = timezone.now()
                 events = Event.objects.filter(car=selected_car, is_active=True)
                 events_month = events.filter(end_time__gte=now, start_time__lte=now)
             except Car.DoesNotExist:
                 selected_car = None
-        else:
-            selected_car = None
 
         event_list = []
         for event in events:
@@ -155,22 +154,21 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
                 "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "description": event.description,
-                "car_name": event.car.car_name +" - ( "+ event.car.car_unique_id+" )",
-                "car_id": event.car.id,  # Add car unique ID
+                "car_name": event.car.car_name + " - ( " + event.car.car_unique_id + " )",
+                "car_id": event.car.id,
                 "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
-                "user_id": event.user.id,  # event creator's user id
+                "user_id": event.user.id,
             })
 
-        # Determine user type
         is_admin = request.user.is_staff or request.user.is_superuser
 
         context = {
             "form": forms,
-            "cars": cars,
+            "vehicle_programs": vehicle_programs,
             "selected_car": selected_car,
             "events": event_list,
             "events_month": events_month,
-            "is_admin": is_admin,  # Pass to template
+            "is_admin": is_admin,
         }
         return render(request, self.template_name, context)
     

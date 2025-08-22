@@ -16740,3 +16740,71 @@ be a descendant of the grid when it is being dragged.
 .user .user-settings label {
   color: #666;
 }
+
+.vehicle-program-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    margin-bottom: 10px;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .vehicle-program-item:hover {
+    background-color: #e9f2ff;
+    border-color: #007BFF;
+  }
+
+  .vehicle-program-item.active {
+    background-color: #c5d4d1;
+    border-color: #007BFF;
+    font-weight: 600;
+  }
+
+  .car-list {
+    padding-left: 0;
+    margin-top: 8px;
+    list-style: none;
+  }
+
+  .car-item {
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #343a40;
+    transition: background-color 0.2s ease;
+  }
+
+  .car-item:hover {
+    background-color: #e9f2ff;
+  }
+
+  .car-item.active {
+    background-color: #d1ecf1;
+    border-color: #17a2b8;
+    font-weight: bold;
+  }
+
+  .car-name {
+    font-weight: 500;
+  }
+
+  .car-unique {
+    font-size: 12px;
+    padding: 4px 8px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 12px;
+  }
+
+  /* Optional: Smooth transitions */
+  .vehicle-program-item,
+  .car-item {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
