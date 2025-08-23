@@ -159,3 +159,7 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 #
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/') # 'data' is my media folder
 MEDIA_URL = '/media/'
+
+
+EMAIL_HOST_USER = 'rahulvarmab161@gmail.com'
+EMAIL_HOST_PASSWORD = 'rlfpynueghwqwjsw'

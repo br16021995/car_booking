@@ -310,6 +310,10 @@ let calendar = new FullCalendar.Calendar(calendarEl, {
     right: 'dayGridMonth,timeGridWeek,timeGridDay,list'
   },
   initialView: 'timeGridWeek',
+  height: 'auto',
+  contentHeight: 'auto',
+  expandRows: true,  // Ensures it expands instead of scrolls
+  scrollTime: '00:00:00',  // Default scroll position (top)
   navLinks: true,
   selectable: true,
   selectMirror: true,

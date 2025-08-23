@@ -14,6 +14,9 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.contrib import messages
 from calendarapp.models import VehicleProgram
+from calendarapp.utils import send_booking_email
+from accounts.models import User
+
 
 
 
@@ -221,6 +224,14 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
                 return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
 
             event.save()
+            # Inside CalendarViewNew.post after event.save()
+            user_email = request.user.email
+            user_name = f"{request.user.first_name} {request.user.last_name}".strip()
+            car_name = event.car.car_name
+            start_time = event.start_time.strftime("%Y-%m-%d %H:%M")
+            end_time = event.end_time.strftime("%Y-%m-%d %H:%M")
+
+            send_booking_email(user_email, user_name, car_name, start_time, end_time)
             messages.success(request, "Car booked successfully!")
             return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}" if car_id else "calendarapp:calendar")
 
