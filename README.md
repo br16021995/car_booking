@@ -8,7 +8,8 @@ https://www.youtube.com/watch?v=HvnPeeLEVq0&t=0s
 
 ## How To Setup
 ```
-git clone https://github.com/sajib1066/event-calendar.git
+git clone https://github.com/br16021995/car_booking
+ 
 ```
 ```
 cd event-calendar

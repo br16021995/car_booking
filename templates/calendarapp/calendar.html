@@ -7,63 +7,6 @@
 <link href="{% static 'calender/main.css' %}" rel="stylesheet" />
 {% endblock extracss %}
 
-{% block breadcrumb %}
-<div>
-  <h1><i class="fa fa-calendar"></i> Calendar</h1>
-  <p>Vehicle Reservation</p> 
-</div>
-<ul class="app-breadcrumb breadcrumb">
-  <li class="breadcrumb-item"><i class="fa fa-home fa-lg"></i></li>
-  <li class="breadcrumb-item"><a>Calendar</a></li>
-</ul>
-{% endblock breadcrumb %}
-
-<style>
-  .vehicle-program-item {
-  padding: 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.vehicle-program-item:hover {
-  background-color: #f7f7f7;
-}
-
-.vehicle-program-item.active {
-  background-color: #e5e5e5;
-}
-
-.car-list {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.car-item {
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-}
-
-.car-item:last-child {
-  border-bottom: none;
-}
-
-.car-item.active {
-  background-color: #d5d5d5;
-}
-
-.car-name {
-  font-weight: bold;
-}
-
-.car-unique {
-  font-size: 12px;
-  padding: 2px 5px;
-}
-</style>
-
-
-
 {% block content %}
 {% if form.non_field_errors %}
 <div class="alert alert-danger" id="error-message">
@@ -88,30 +31,33 @@
 <div class="row">
   <div class="col-md-12">
     <div class="tile row">
-     <div class="col-md-3">
-    <h4 class="mb-3">🚗 Select a Vehicle Program</h4>
+     <div class="col-md-3 col-sm-6 col-xs-12">
+    <h4 class="mb-3">🚗 Vehicle Program</h4>
     <ul id="vehicle-program-list" class="list-group">
-        {% for program in vehicle_programs %}
-            <li class="list-group-item vehicle-program-item">
-                <span class="vehicle-program-name">{{ program.name }}</span>
-                <ul class="car-list list-group mt-2" style="display: none;">
-                    {% for car in program.cars.all %}
-                        <li class="list-group-item car-item d-flex justify-content-between align-items-center 
-                                   {% if selected_car and car.id == selected_car.id %}active{% endif %}"
-                            data-car-id="{{ car.id }}">
-                            <span class="car-name">{{ car.car_name }}</span>
-                            <span class="badge badge-primary badge-pill car-unique">
-                                {{ car.car_unique_id }}
-                            </span>
-                        </li>
-                    {% empty %}
-                        <li class="list-group-item text-muted">No cars available</li>
-                    {% endfor %}
-                </ul>
-            </li>
-        {% empty %}
-            <li class="list-group-item text-muted">No vehicle programs available</li>
-        {% endfor %}
+      {% for program in vehicle_programs %}
+      <li class="list-group-item vehicle-program-item" data-program-id="{{ program.id }}" >
+        <span class="vehicle-program-name">{{ program.name }}</span>
+        <ul class="car-list list-group mt-2" style="display: none;">
+          {% for car in program.cars.all %}
+          <li class="list-group-item car-item d-flex justify-content-between align-items-center
+                                       {% if selected_car and car.id == selected_car.id %}active{% endif %}"
+            data-car-id="{{ car.id }}">
+            <span class="car-name">{{ car.car_name }}</span>
+            <span class="badge badge-primary badge-pill car-unique">
+              {{ car.car_unique_id }}
+            </span>
+            {% if car.id in available_cars_today %}
+            <span class="available-dot"></span>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">No cars available for this program</li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted">No vehicle programs available</li>
+      {% endfor %}
     </ul>
 </div>
       <div class="col-md-9">

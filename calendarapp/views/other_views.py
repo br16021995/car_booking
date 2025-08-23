@@ -161,6 +161,18 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
             })
 
         is_admin = request.user.is_staff or request.user.is_superuser
+        # Calculate available cars for today
+        today = timezone.now()
+        print('hidf')
+        print(today)
+        available_cars_today = set(Car.objects.filter(is_active=True).values_list('id', flat=True))
+        booked_cars_today = set(Event.objects.filter(
+            is_active=True,
+            start_time__date__lte=today,
+            end_time__date__gte=today
+        ).values_list('car_id', flat=True))
+        available_cars_today -= booked_cars_today
+
 
         context = {
             "form": forms,
@@ -169,12 +181,15 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
             "events": event_list,
             "events_month": events_month,
             "is_admin": is_admin,
+            "available_cars_today": available_cars_today,
         }
         return render(request, self.template_name, context)
     
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, user=request.user)
         cars = Car.objects.filter(is_active=True)
+        vehicle_programs = VehicleProgram.objects.filter(is_active=True).prefetch_related('cars')
+
         car_id = request.POST.get('car') or request.GET.get('car_id')
         selected_car = None
         if car_id:
@@ -187,35 +202,33 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
             event = form.save(commit=False)
             event.user = request.user
 
-            # === Custom validation for booking days ===
             duration = event.end_time - event.start_time
             max_days = 30 if (request.user.is_superuser or request.user.is_staff) else 4
 
             if duration > timedelta(days=max_days):
-                # form.add_error(
-                #     None,
-                #     f"You cannot book for more than {max_days} days."
-                # )
                 messages.error(request, f"You cannot book car for more than {max_days} days.")
                 return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
 
-            else:
-                event.save()
-                messages.success(request, "Car booked successfully!")
-                if car_id:
-                    return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
-                else:
-                    return redirect("calendarapp:calendar")
+            overlapping_events = Event.objects.filter(
+                user=request.user,
+                is_active=True,
+                start_time__lt=event.end_time,
+                end_time__gt=event.start_time
+            ).exclude(car=selected_car)
 
-        # If invalid form or error in validation → return context
-        # messages.error(request, "There was an error booking the event. Please check the form.")
+            if overlapping_events.exists():
+                messages.error(request, "You already have a booking for another car during this time slot.")
+                return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}")
+
+            event.save()
+            messages.success(request, "Car booked successfully!")
+            return redirect(f"{reverse('calendarapp:calendar')}?car_id={car_id}" if car_id else "calendarapp:calendar")
+
+        # === If form is invalid, re-render page with full context ===
         now = timezone.now()
-        events = Event.objects.filter(is_active=True)
-        events_month = Event.objects.filter(
-            is_active=True,
-            end_time__gte=now,
-            start_time__lte=now,
-        )
+        events = Event.objects.filter(car=selected_car, is_active=True) if selected_car else Event.objects.none()
+        events_month = events.filter(end_time__gte=now, start_time__lte=now)
+
         event_list = []
         for event in events:
             event_list.append({
@@ -224,15 +237,32 @@ class CalendarViewNew(LoginRequiredMixin, generic.View):
                 "start": event.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "end": event.end_time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "description": event.description,
+                "car_name": event.car.car_name + " - ( " + event.car.car_unique_id + " )",
+                "car_id": event.car.id,
+                "booked_by": f"{event.user.first_name} {event.user.last_name}".strip(),
+                "user_id": event.user.id,
             })
+
+        is_admin = request.user.is_staff or request.user.is_superuser
+        today = timezone.now()
+        available_cars_today = set(Car.objects.filter(is_active=True).values_list('id', flat=True))
+        booked_cars_today = set(Event.objects.filter(
+            is_active=True,
+            start_time__date__lte=today,
+            end_time__date__gte=today
+        ).values_list('car_id', flat=True))
+        available_cars_today -= booked_cars_today
 
         context = {
             "form": form,
-            "cars": cars,
+            "vehicle_programs": vehicle_programs,
             "selected_car": selected_car,
             "events": event_list,
             "events_month": events_month,
+            "is_admin": is_admin,
+            "available_cars_today": available_cars_today,
         }
+
         return render(request, self.template_name, context)
 
 

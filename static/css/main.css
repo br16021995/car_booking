@@ -16741,6 +16741,7 @@ be a descendant of the grid when it is being dragged.
   color: #666;
 }
 
+/* Base styles for the vehicle program item */
 .vehicle-program-item {
     padding: 12px 16px;
     border-radius: 8px;
@@ -16749,26 +16750,26 @@ be a descendant of the grid when it is being dragged.
     border: 1px solid #dee2e6;
     margin-bottom: 10px;
     transition: all 0.2s ease-in-out;
-  }
+}
 
-  .vehicle-program-item:hover {
+.vehicle-program-item:hover {
     background-color: #e9f2ff;
     border-color: #007BFF;
-  }
+}
 
-  .vehicle-program-item.active {
+.vehicle-program-item.active {
     background-color: #c5d4d1;
     border-color: #007BFF;
     font-weight: 600;
-  }
+}
 
-  .car-list {
+.car-list {
     padding-left: 0;
     margin-top: 8px;
     list-style: none;
-  }
+}
 
-  .car-item {
+.car-item {
     padding: 10px 15px;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
@@ -16779,32 +16780,66 @@ be a descendant of the grid when it is being dragged.
     align-items: center;
     color: #343a40;
     transition: background-color 0.2s ease;
-  }
+}
 
-  .car-item:hover {
+.car-item:hover {
     background-color: #e9f2ff;
-  }
+}
 
-  .car-item.active {
+.car-item.active {
     background-color: #d1ecf1;
     border-color: #17a2b8;
     font-weight: bold;
-  }
+}
 
-  .car-name {
+.car-name {
     font-weight: 500;
-  }
+}
 
-  .car-unique {
+.car-unique {
     font-size: 12px;
     padding: 4px 8px;
     background-color: #007bff;
     color: white;
     border-radius: 12px;
-  }
+}
 
-  /* Optional: Smooth transitions */
-  .vehicle-program-item,
-  .car-item {
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-  }
+.available-dot {
+    height: 10px;
+    width: 10px;
+    background-color: green;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px; /* Added margin for spacing */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .vehicle-program-item {
+        padding: 10px 12px;
+    }
+
+    .car-item {
+        padding: 8px 10px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .car-name, .car-unique {
+        margin-bottom: 5px;
+    }
+
+    .available-dot {
+        margin-right: 0; /* Reset margin for smaller screens */
+    }
+}
+
+@media (max-width: 576px) {
+    .vehicle-program-item {
+        padding: 8px 10px;
+    }
+
+    .car-item {
+        padding: 6px 8px;
+    }
+}

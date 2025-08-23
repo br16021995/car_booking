@@ -1467,12 +1467,12 @@ A VERTICAL event
 }
 
 .car-list .car-name {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .car-list .car-unique {
   background: #6c757d; /* gray pill */
-  font-size: 13px;
+  font-size: 10px;
   padding: 5px 10px;
   border-radius: 12px;
 }
