@@ -176,8 +176,9 @@
               <!-- Modal Footer -->
               <div class="modal-footer">
                 <button id="delete-event-button" data-event-id="" type="button" class="btn btn-danger">Delete</button>
-                <!-- <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next Week</button>
-                  <button id="add-to-next-day" data-event-id-day="" type="button" class="btn btn-primary">Next Day</button> -->
+                <button id="acknowledge-event-button" data-event-id="" type="button" class="btn btn-success" disabled>Acknowledge</button>
+                <button id="add-to-next-week" data-event-id-week="" type="button" class="btn btn-success">Next Week</button>
+                  <button id="add-to-next-day" data-event-id-day="" type="button" class="btn btn-primary">Next Day</button> 
               </div>
             </form>
           </div>
@@ -366,9 +367,32 @@ let calendar = new FullCalendar.Calendar(calendarEl, {
         document.getElementById('delete-event-button')?.setAttribute('data-event-id', arg.event.id);
         document.getElementById('add-to-next-week')?.setAttribute('data-event-id-week', arg.event.id);
         document.getElementById('add-to-next-day')?.setAttribute('data-event-id-day', arg.event.id);
+        document.getElementById('acknowledge-event-button')?.setAttribute('data-event-id', arg.event.id);
+
+
+        // Calculate time difference between now and event start
+    const now = new Date();
+    const eventStart = new Date(arg.event.start);
+    const diffMs = eventStart - now;
+    const diffMinutes = diffMs / (1000 * 60);
+
+    // Enable Edit and Acknowledge buttons only if within 30 minutes prior to event start
+    //const editBtn = document.getElementById('edit-event-button');
+    const ackBtn = document.getElementById('acknowledge-event-button');
+
+    if (diffMinutes <= 30 && diffMinutes >= 0) {
+      //editBtn.disabled = false;
+      ackBtn.disabled = false;
+    } else {
+      //editBtn.disabled = true;
+      ackBtn.disabled = true;
+    }
 
         modal.style.display = 'block';
       },
+
+      
+    
 
       editable: true,
       dayMaxEvents: true,
@@ -517,5 +541,30 @@ let calendar = new FullCalendar.Calendar(calendarEl, {
     }
   }
 });
+
+const ackBtn = document.getElementById('acknowledge-event-button');
+if (ackBtn) {
+  ackBtn.addEventListener('click', function () {
+    const eventId = this.getAttribute('data-event-id');
+    if (confirm('Do you want to acknowledge this event?')) {
+      $.ajax({
+        url: `/acknowledge_event/${eventId}/`,
+        type: 'POST',
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}',
+        },
+        success: function (response) {
+          alert(response.message);
+          const modal = document.getElementById('detailModal');
+          if (modal) modal.style.display = 'none';
+          window.location.reload();
+        },
+        error: function (xhr, status, error) {
+          alert('Error acknowledging event.');
+        }
+      });
+    }
+  });
+}
 </script>
 {% endblock extrascripts %}

@@ -66,6 +66,7 @@ class Event(EventAbstract):
     description = models.TextField()
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+    acknowledged = models.BooleanField(default=True)
 
     objects = EventManager()
 

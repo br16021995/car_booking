@@ -314,3 +314,17 @@ def next_day(request, event_id):
         return JsonResponse({'message': 'Sucess!'})
     else:
         return JsonResponse({'message': 'Error!'}, status=400)
+    
+
+def acknowledge_event(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    if request.user == event.user or request.user.is_superuser or request.user.is_staff:
+        if event.acknowledged != True:
+            event.acknowledged = True
+            event.save()
+            return JsonResponse({'message': 'Event acknowledged successfully.'})
+        else:
+            return JsonResponse({'message': 'Event already acknowledged successfully.'})
+
+    else:
+        return JsonResponse({'message': 'You are not authorized to acknowledge this event.'}, status=403)

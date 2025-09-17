@@ -38,4 +38,5 @@ urlpatterns = [
         views.CompletedEventsListView.as_view(),
         name="completed_events",
     ),
+    path('acknowledge_event/<int:event_id>/', views.acknowledge_event, name='acknowledge_event'),
 ]
